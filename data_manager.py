@@ -55,18 +55,18 @@ def render_upload_section():
             st.success(f"File uploaded successfully! Found {len(df)} records.")
             
             # Validate the data
-            # is_valid, errors, warnings = utils.validate_uploaded_data(df, events)
+            is_valid, errors, warnings = utils.validate_uploaded_data(df, events)
             
-            # if not is_valid:
-            #     st.error("The uploaded data contains errors that must be fixed:")
-            #     for error in errors:
-            #         st.markdown(f"- {error}")
-            #     return
+            if not is_valid:
+                st.error("The uploaded data contains errors that must be fixed:")
+                for error in errors:
+                    st.markdown(f"- {error}")
+                return
             
-            # if warnings:
-            #     st.warning("The uploaded data contains some warnings:")
-            #     for warning in warnings:
-            #         st.markdown(f"- {warning}")
+            if warnings:
+                st.warning("The uploaded data contains some warnings:")
+                for warning in warnings:
+                    st.markdown(f"- {warning}")
             
             # Preview the data
             st.subheader("Data Preview")

@@ -32,19 +32,19 @@ def main():
     auth.create_initial_admin()
     
     # Sidebar
-    st.sidebar.title(config.APP_NAME)
+    st.title(config.APP_NAME)
     
     # Dark/Light mode toggle
     if 'dark_mode' not in st.session_state:
         st.session_state.dark_mode = False
     
-    dark_mode = st.sidebar.checkbox("Dark Mode", value=st.session_state.dark_mode)
+    #dark_mode = st.sidebar.checkbox("Dark Mode", value=st.session_state.dark_mode)
     
-    if dark_mode != st.session_state.dark_mode:
-        st.session_state.dark_mode = dark_mode
+    # if dark_mode != st.session_state.dark_mode:
+    #     st.session_state.dark_mode = dark_mode
         
     
-    utils.set_theme(dark_mode)
+    #utils.set_theme(dark_mode)
     
     # Display user info and logout button
     auth.display_user_info()

@@ -145,7 +145,7 @@ def perform_check_in(participant, db):
         if success:
             st.success(f"✅ {participant['name']} has been checked in successfully!")
             time.sleep(1)
-            st.experimental_rerun()
+             
         else:
             st.error("Failed to check in participant. They may already be checked in.")
 
@@ -161,7 +161,7 @@ def perform_undo_check_in(participant, db):
         if success:
             st.success(f"✅ Check-in has been undone for {participant['name']}.")
             time.sleep(1)
-            st.experimental_rerun()
+             
         else:
             st.error("Failed to undo check-in.")
 
@@ -196,7 +196,7 @@ def perform_edit_participant(participant, db):
         if success:
             st.success(f"✅ Details updated successfully for {name}!")
             time.sleep(1)
-            st.experimental_rerun()
+             
         else:
             st.error("Failed to update participant details.")
 

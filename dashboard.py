@@ -124,6 +124,7 @@ def render_attendance_section(db, event_id, event_name):
     """Render the attendance breakdown section."""
     st.header("Attendance Breakdown")
     
+    
     if event_id is None:
         # Show event-wise breakdown
         events_stats = db.get_event_stats()

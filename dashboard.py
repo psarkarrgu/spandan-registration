@@ -186,6 +186,9 @@ def render_attendance_section(db, event_id, event_name):
         )
         
         st.plotly_chart(fig, use_container_width=True)
+        
+        # Add participant status table
+        show_participant_status_table(db, event_id, event_name)
 
 def render_college_breakdown(db, event_id, event_name):
     """Render the college-wise breakdown section."""
@@ -280,6 +283,79 @@ def render_check_in_timeline(db, event_id, event_name):
     )
     
     st.plotly_chart(fig, use_container_width=True)
+
+def show_participant_status_table(db, event_id, event_name):
+    """Display a table of participants with their check-in status."""
+    st.subheader("Participant Status List")
+    
+    # Get all participants for the event
+    participants = db.get_participants_by_event(event_id)
+    
+    if not participants:
+        st.info("No participants found for this event.")
+        return
+    
+    # Create a DataFrame for the table
+    participant_data = []
+    
+    for p in participants:
+        check_in_status = "✅ Checked In" if p['checked_in'] else "❌ Not Checked In"
+        
+        # Create clickable phone number
+        phone_display = p['phone'] if p['phone'] else "-"
+        if p['phone']:
+            # Create a clickable link that initiates a call
+            phone_display = f"<a href='tel:{p['phone']}'>{p['phone']}</a>"
+        
+        participant_data.append({
+            "Name": p['name'],
+            "College": p['college'] or "-",
+            "Phone": phone_display,
+            "Status": check_in_status
+        })
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(participant_data)
+    
+    # Show search box for filtering participants
+    search_term = st.text_input("Search participants by name or college", key="dashboard_participant_search")
+    
+    if search_term:
+        # Filter the DataFrame
+        filtered_df = df[
+            df['Name'].str.contains(search_term, case=False, na=False) | 
+            df['College'].str.contains(search_term, case=False, na=False)
+        ]
+        
+        if len(filtered_df) > 0:
+            # Display the filtered results
+            st.write(f"Found {len(filtered_df)} matching participants")
+            
+            # Convert DataFrame to HTML with clickable phone numbers
+            html = filtered_df.to_html(escape=False, index=False)
+            st.markdown(html, unsafe_allow_html=True)
+        else:
+            st.info("No matching participants found.")
+    else:
+        # Display all participants
+        # Convert DataFrame to HTML with clickable phone numbers
+        html = df.to_html(escape=False, index=False)
+        st.markdown(html, unsafe_allow_html=True)
+    
+    # Add download buttons for this table
+    st.subheader("Download Participant List")
+    
+    # Create a downloadable version (without HTML links)
+    download_df = df.copy()
+    download_df['Phone'] = [p['phone'] if p['phone'] else "-" for p in participants]
+    download_df['Status'] = [("Checked In" if p['checked_in'] else "Not Checked In") for p in participants]
+    
+    # Export links
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(utils.export_to_csv(download_df, f"participants_{event_name.replace(' ', '_')}.csv"), unsafe_allow_html=True)
+    with col2:
+        st.markdown(utils.export_to_excel(download_df, f"participants_{event_name.replace(' ', '_')}.xlsx"), unsafe_allow_html=True)
 
 def render_export_options(db, event_id, event_name):
     """Render export options for the dashboard."""

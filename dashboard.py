@@ -14,7 +14,7 @@ import config
 @auth.requires_auth('view_dashboard')
 def render_dashboard():
     """Render the real-time dashboard."""
-    st.title("Event Dashboard")
+    st.title("Spandan Event Dashboard")
     
     db = Database()
     

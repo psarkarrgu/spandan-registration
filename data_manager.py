@@ -14,9 +14,9 @@ import auth
 @auth.requires_auth('upload_data')
 def render_data_manager():
     """Render the data manager page."""
-    st.title("Data Management")
+    st.title("Spandan Data Management")
     
-    tabs = st.tabs(["Upload Registrations", "Manage Events", "Participant Manager", "Data Backup"])
+    tabs = st.tabs(["Upload Registrations", "Manage Events", "Participant Manager", "Backup & Restore"])
     
     with tabs[0]:
         render_upload_section()

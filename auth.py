@@ -124,7 +124,7 @@ def is_viewer():
 
 def display_login_form():
     """Display the login form."""
-    st.markdown("## Login")
+    st.markdown("## SRS Login🔒")
     
     with st.form("login_form"):
         username = st.text_input("Username")

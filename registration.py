@@ -12,7 +12,7 @@ import auth
 @auth.requires_auth('manage_registration')
 def render_registration():
     """Render the registration management page."""
-    st.title("Registration Management")
+    st.title("Spandan Registration Management")
     
     db = Database()
     events = db.get_all_events()

@@ -34,14 +34,14 @@ def main():
     # Sidebar
     st.sidebar.image(config.APP_ICON,width=200)
     st.sidebar.title(config.APP_NAME)
-    
+    st.sidebar.markdown("#### Developer👨🏻‍💻[Pranay Sarkar](https://www.linkedin.com/in/pranay-sarkar/)")
     
     
     # Dark/Light mode toggle
     if 'dark_mode' not in st.session_state:
         st.session_state.dark_mode = False
     
-    dark_mode = st.sidebar.checkbox("Dark Mode", value=st.session_state.dark_mode)
+    dark_mode = False
     
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode

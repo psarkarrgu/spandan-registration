@@ -1,6 +1,7 @@
 def confirm_dialog(title, message, confirm_button_text="Confirm"):
     """Display a confirmation dialog."""
-    return st.warning(f"{title}: {message}", icon="⚠️")"""
+    return st.warning(f"{title}: {message}", icon="⚠️")
+"""
 Utility functions for the Event Registration System.
 """
 import streamlit as st

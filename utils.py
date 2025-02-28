@@ -341,7 +341,7 @@ def resize_image(image_bytes, max_size_kb=500):
         
         # Compress using JPEG format
         output = io.BytesIO()
-        quality = 85  # Start with good quality
+        quality = 95  # Start with good quality
         
         image.save(output, format='JPEG', quality=quality, optimize=True)
         

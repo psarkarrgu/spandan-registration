@@ -187,97 +187,16 @@ def apply_custom_css():
     css = """
     <style>
         .stApp {
-            max-width: 1200px;
+            
             margin: 0 auto;
         }
-        
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            background-color: #f0f2f6;
-            border-radius: 4px 4px 0px 0px;
-            gap: 1px;
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
-        
-        .stTabs [aria-selected="true"] {
-            background-color: #e0e0e0;
-            border-bottom: 2px solid #1E88E5;
-        }
+          
         
         div[data-testid="stToolbar"] {
             visibility: hidden;
         }
         
-        .success-card {
-            background-color: #d7f7e1;
-            padding: 20px;
-            border-radius: 5px;
-            border-left: 5px solid #4CAF50;
-            margin-bottom: 20px;
-        }
         
-        .warning-card {
-            background-color: #fff6e0;
-            padding: 20px;
-            border-radius: 5px;
-            border-left: 5px solid #FF9800;
-            margin-bottom: 20px;
-        }
-        
-        .danger-card {
-            background-color: #ffe0e0;
-            padding: 20px;
-            border-radius: 5px;
-            border-left: 5px solid #F44336;
-            margin-bottom: 20px;
-        }
-        
-        .info-card {
-            background-color: #e3f2fd;
-            padding: 20px;
-            border-radius: 5px;
-            border-left: 5px solid #1E88E5;
-            margin-bottom: 20px;
-        }
-        
-        /* Status indicators */
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        
-        .status-checked-in {
-            background-color: #4CAF50;
-        }
-        
-        .status-not-checked-in {
-            background-color: #F44336;
-        }
-        
-        /* Dark mode toggle */
-        .dark-mode {
-            background-color: #121212;
-            color: #f0f2f6;
-        }
-        
-        .dark-mode .stTabs [data-baseweb="tab"] {
-            background-color: #2d2d2d;
-            color: #f0f2f6;
-        }
-        
-        .dark-mode .stTabs [aria-selected="true"] {
-            background-color: #1a1a1a;
-            border-bottom: 2px solid #90CAF9;
-        }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)

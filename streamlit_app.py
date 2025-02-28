@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # Apply custom CSS
-#utils.apply_custom_css()
+utils.apply_custom_css()
 
 def main():
     """Main function to run the Streamlit app."""

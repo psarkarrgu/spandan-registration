@@ -49,28 +49,8 @@ def render_dashboard():
     view_options = ["All Events"] + [f"{e['id']}: {e['name']}" for e in events]
     selected_view = st.sidebar.selectbox("Select View", view_options)
     
-    # Auto-refresh option
-    auto_refresh = st.sidebar.checkbox("Auto-refresh Dashboard", value=False)
     
-    if auto_refresh:
-        refresh_interval = st.sidebar.slider("Refresh Interval (seconds)", 
-                                           min_value=10, 
-                                           max_value=300, 
-                                           value=60)
-        st.sidebar.info(f"Dashboard will refresh every {refresh_interval} seconds.")
-        st.sidebar.write("Last updated: " + datetime.datetime.now().strftime("%H:%M:%S"))
-        
-        # Auto-refresh using JavaScript
-        st.markdown(
-            f"""
-            <script>
-                setTimeout(function(){{
-                    window.location.reload();
-                }}, {refresh_interval * 1000});
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
+    
     
     # Filter data based on selection
     if selected_view == "All Events":

@@ -46,7 +46,7 @@ def main():
     
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
-        st.experimental_rerun()
+        st.rerun()
     
     utils.set_theme(dark_mode)
     
@@ -198,7 +198,7 @@ def render_user_management():
             if user_id:
                 st.success(f"User '{username}' created successfully with role '{selected_role_name}'!")
                 time.sleep(1)
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error(f"Failed to create user. Username '{username}' may already exist.")
     
@@ -231,12 +231,12 @@ def render_user_management():
                     del st.session_state.confirm_delete_user
                 
                 time.sleep(1)
-                st.experimental_rerun()
+                st.rerun()
             
             if st.session_state.get('confirm_delete_user_cancel', False):
                 if 'confirm_delete_user' in st.session_state:
                     del st.session_state.confirm_delete_user
-                st.experimental_rerun()
+                st.rerun()
     else:
         st.info("There are no other users besides yourself that can be deleted.")
 

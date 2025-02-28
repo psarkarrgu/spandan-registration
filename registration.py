@@ -214,7 +214,7 @@ def perform_undo_check_in(participant, db):
         if success:
             st.success(f"✅ Check-in has been undone for {participant['name']}.")
             time.sleep(1)
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Failed to undo check-in.")
 
@@ -353,7 +353,7 @@ def render_on_spot_registration(db, events):
             # Clear form (using a session state trick)
             if 'form_submitted' not in st.session_state:
                 st.session_state.form_submitted = True
-                st.experimental_rerun()
+                st.rerun()
             else:
                 del st.session_state.form_submitted
         else:

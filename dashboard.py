@@ -183,7 +183,8 @@ def render_attendance_section(db, event_id, event_name):
         
         st.plotly_chart(fig, use_container_width=True)
     
-    
+    else:
+        # Show status breakdown for single event
         
         # Add participant status table
         show_participant_status_table(db, event_id, event_name)

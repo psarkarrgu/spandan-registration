@@ -43,8 +43,6 @@ def render_dashboard():
             #render_college_breakdown(db, event_id, event_name)
             #render_check_in_timeline(db, event_id, event_name)
             render_export_options(db, event_id, event_name)
-
-            
             return
     
     # For users with access to all events

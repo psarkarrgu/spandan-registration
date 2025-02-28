@@ -225,13 +225,14 @@ def render_check_in_timeline(db, event_id, event_name):
     
     # Date selection
     today = datetime.datetime.now().date()
-    selected_date = st.date_input("Select Date", value=today)
+    selected_date = today 
+
     
     # Get check-in data
     timeline_data = db.get_check_in_timeline(event_id, selected_date.strftime("%Y-%m-%d"))
     
     if not timeline_data:
-        st.info("No check-in data available for the selected date.")
+        st.info("No check-in data available for today.")
         return
     
     # Convert to DataFrame for plotting

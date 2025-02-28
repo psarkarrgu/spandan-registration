@@ -198,15 +198,16 @@ def perform_check_in(participant, db):
             try:
                 success = db.check_in_participant(participant['id'], st.session_state.user_id, photo_data)
                 
-                if success:
-                    msg = f"✅ {participant['name']} has been checked in successfully!"
-                    if photo_data:
-                        msg += " ID card photo saved."
-                    st.success(msg)
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error("Failed to check in participant. They may already be checked in.")
+                if picture:
+                    # Get original size for logging
+                    original_size = len(picture.getvalue()) / 1024  # KB
+                    
+                    # Optimize the image before storing
+                    id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=300)
+                    
+                    # Show success message with size information
+                    st.success(f"✅ ID card photo captured and optimized! " +
+                            f"Size reduced from {original_size:.1f}KB to {len(id_card_photo)/1024:.1f}KB")
             except Exception as e:
                 st.error(f"Error during check-in: {str(e)}")
                 st.info("Try again without capturing the photo, or with a smaller photo.")

@@ -64,7 +64,7 @@ def render_dashboard():
     render_overview_section(db, event_id, event_name)
     render_attendance_section(db, event_id, event_name)
     #render_college_breakdown(db, event_id, event_name)
-    #render_check_in_timeline(db, event_id, event_name)
+    render_check_in_timeline(db, event_id, event_name)
     
     # Export options
     render_export_options(db, event_id, event_name)

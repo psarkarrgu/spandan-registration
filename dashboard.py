@@ -40,8 +40,8 @@ def render_dashboard():
             # Render the dashboard components with the assigned event
             render_overview_section(db, event_id, event_name)
             render_attendance_section(db, event_id, event_name)
-            render_college_breakdown(db, event_id, event_name)
-            render_check_in_timeline(db, event_id, event_name)
+            #render_college_breakdown(db, event_id, event_name)
+            #render_check_in_timeline(db, event_id, event_name)
             render_export_options(db, event_id, event_name)
             return
     
@@ -343,7 +343,7 @@ def render_export_options(db, event_id, event_name):
     
     export_type = st.selectbox(
         "Select Export Type",
-        ["Participant List", "Check-in Status", "College Statistics"]
+        ["Participant List", "Check-in Status"]
     )
     
     if export_type == "Participant List":

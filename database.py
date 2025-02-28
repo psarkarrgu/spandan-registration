@@ -299,15 +299,15 @@ class Database:
         if event_id:
             cursor.execute(
                 """SELECT * FROM participants 
-                   WHERE (name LIKE ? OR email LIKE ? OR phone LIKE ? OR college LIKE ?) 
+                   WHERE (name LIKE ? OR email LIKE ? OR phone LIKE ? OR college LIKE ? OR group_name LIKE ?) 
                    AND event_id = ?""",
-                (search_pattern, search_pattern, search_pattern, search_pattern, event_id)
+                (search_pattern, search_pattern, search_pattern, search_pattern,search_pattern, event_id)
             )
         else:
             cursor.execute(
                 """SELECT * FROM participants 
-                   WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR college LIKE ?""",
-                (search_pattern, search_pattern, search_pattern, search_pattern)
+                   WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR college LIKE ? OR group_name LIKE ?""",
+                (search_pattern, search_pattern, search_pattern, search_pattern,search_pattern)
             )
         
         return cursor.fetchall()
@@ -611,3 +611,82 @@ class Database:
             """
         
         return pd.read_sql_query(query, conn)
+    def get_all_participants(self, event_id=None):
+        """Get all participants, optionally filtered by event."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        if event_id:
+            cursor.execute(
+                """SELECT p.*, e.name as event_name 
+                FROM participants p
+                JOIN events e ON p.event_id = e.id
+                WHERE p.event_id = ?
+                ORDER BY p.name""", 
+                (event_id,)
+            )
+        else:
+            cursor.execute(
+                """SELECT p.*, e.name as event_name 
+                FROM participants p
+                JOIN events e ON p.event_id = e.id
+                ORDER BY p.name"""
+            )
+        
+        return cursor.fetchall()
+    def update_participant_full(self, participant_id, name, email, phone, college, group_name, 
+                           event_id, checked_in, user_id):
+        """Update all participant details and track changes."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # Get current data
+        cursor.execute("SELECT * FROM participants WHERE id = ?", (participant_id,))
+        current_data = cursor.fetchone()
+        
+        if not current_data:
+            return False
+        
+        # Track changes
+        fields_to_update = {
+            'name': name,
+            'email': email,
+            'phone': phone,
+            'college': college,
+            'group_name': group_name,
+            'event_id': event_id,
+            'checked_in': checked_in
+        }
+        
+        for field, new_value in fields_to_update.items():
+            old_value = current_data[field]
+            if str(old_value) != str(new_value):  # Convert to string for comparison
+                cursor.execute(
+                    """INSERT INTO data_history 
+                    (participant_id, field_name, old_value, new_value, modified_by) 
+                    VALUES (?, ?, ?, ?, ?)""",
+                    (participant_id, field, str(old_value), str(new_value), user_id)
+                )
+        
+        # Update check_in_time if checked_in status changed
+        check_in_time_clause = ""
+        params = [name, email, phone, college, group_name, event_id, checked_in]
+        
+        # If changing from not checked in to checked in, update the timestamp
+        if not current_data['checked_in'] and checked_in:
+            check_in_time_clause = ", check_in_time = CURRENT_TIMESTAMP"
+        # If changing from checked in to not checked in, clear the timestamp
+        elif current_data['checked_in'] and not checked_in:
+            check_in_time_clause = ", check_in_time = NULL"
+        
+        # Update participant
+        cursor.execute(
+            f"""UPDATE participants 
+            SET name = ?, email = ?, phone = ?, college = ?, group_name = ?, 
+                event_id = ?, checked_in = ? {check_in_time_clause}
+            WHERE id = ?""",
+            params + [participant_id]
+        )
+        
+        conn.commit()
+        return True

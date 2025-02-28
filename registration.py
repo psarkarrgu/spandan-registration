@@ -56,7 +56,7 @@ def render_check_in(db, events):
     # Search participants
     st.subheader("Search Participants")
     
-    search_term = st.text_input("Search by name, college, phone, or email")
+    search_term = st.text_input("Search by name, college, phone, email or Group")
     
     if search_term:
         participants = db.search_participants(search_term, selected_event_id)

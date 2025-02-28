@@ -6,6 +6,7 @@ import pandas as pd
 import io
 import os
 import time
+import datetime
 from database import Database
 import utils
 import auth
@@ -15,7 +16,7 @@ def render_data_manager():
     """Render the data manager page."""
     st.title("Data Management")
     
-    tabs = st.tabs(["Upload Registrations", "Manage Events", "Data Backup"])
+    tabs = st.tabs(["Upload Registrations", "Manage Events", "Participant Manager", "Data Backup"])
     
     with tabs[0]:
         render_upload_section()
@@ -24,6 +25,9 @@ def render_data_manager():
         render_event_management()
     
     with tabs[2]:
+        render_registrations()
+    
+    with tabs[3]:
         render_backup_section()
 
 def render_upload_section():
@@ -250,8 +254,13 @@ def render_backup_section():
     
     with col1:
         st.subheader("Create Backup")
+        
+        # Add custom filename option
+        default_filename = f"backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        custom_filename = st.text_input("Backup Filename (optional)", value=default_filename)
+        
         if st.button("Create New Backup"):
-            backup_path = db.create_backup()
+            backup_path = db.create_backup(custom_filename)
             if backup_path:
                 st.success(f"Backup created successfully at: {os.path.basename(backup_path)}")
             else:
@@ -262,7 +271,7 @@ def render_backup_section():
         st.subheader("Export Data")
         
         export_options = ["All Participants", "By Event"]
-        export_choice = st.radio("Export options:", export_options)
+        export_choice = st.radio("Export options:", export_options,key="export_options")
         
         if export_choice == "By Event":
             events = db.get_all_events()
@@ -334,11 +343,168 @@ def render_backup_section():
                     del st.session_state.confirm_restore
                 
                 time.sleep(1)
-                 
+                st.rerun()
             
             if st.session_state.get('confirm_restore_cancel', False):
                 if 'confirm_restore' in st.session_state:
                     del st.session_state.confirm_restore
-                 
+                st.rerun()
     else:
         st.info("No backups found.")
+    
+   
+def render_registrations():
+    db = Database()
+    # Registration management section
+    st.header("Participant Management")
+    
+    # Event filter
+    events = db.get_all_events()
+    
+    event_options = {"All Events": None}
+    event_options.update({f"{e['id']}: {e['name']}": e['id'] for e in events})
+    
+    selected_event_key = st.selectbox("Filter by Event", list(event_options.keys()), key="registration_filter")
+    selected_event_id = event_options[selected_event_key]
+    
+    # Search filter
+    
+    participants = db.get_all_participants(selected_event_id)
+    
+    if participants:
+        # Convert to DataFrame for display and editing
+        participants_data = []
+        for p in participants:
+            # Format the checked-in status as text
+            checked_in_status = "✅ Checked In" if p['checked_in'] else "❌ Not Checked In"
+            
+            participants_data.append({
+                "ID": p['id'],
+                "Name": p['name'],
+                "Email": p['email'] or "",
+                "Phone": p['phone'] or "",
+                "College": p['college'] or "",
+                "Group": p['group_name'] or "",
+                "Event": p['event_name'],
+                "Checked In": checked_in_status,
+                "Check-in Time": p['check_in_time'] or ""
+            })
+        
+        df = pd.DataFrame(participants_data)
+        
+        # Display in a dataframe with editing capability
+        st.write(f"### Participants ({len(df)})")
+        edited_df = st.data_editor(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "ID": st.column_config.NumberColumn(
+                    "ID",
+                    help="Participant ID",
+                    disabled=True,
+                    width="small"
+                ),
+                "Name": st.column_config.TextColumn(
+                    "Name",
+                    help="Participant name",
+                    width="medium",
+                    required=True
+                ),
+                "Email": st.column_config.TextColumn(
+                    "Email",
+                    help="Email address",
+                    width="medium"
+                ),
+                "Phone": st.column_config.TextColumn(
+                    "Phone",
+                    help="Phone number",
+                    width="medium"
+                ),
+                "College": st.column_config.TextColumn(
+                    "College",
+                    help="College/Institution",
+                    width="medium"
+                ),
+                "Group": st.column_config.TextColumn(
+                    "Group",
+                    help="Group/Team name",
+                    width="medium"
+                ),
+                "Event": st.column_config.TextColumn(
+                    "Event",
+                    help="Event name",
+                    width="medium",
+                    disabled=True
+                ),
+                "Checked In": st.column_config.TextColumn(
+                    "Checked In Status",
+                    help="Check-in status",
+                    width="small",
+                    disabled=True
+                ),
+                "Check-in Time": st.column_config.TextColumn(
+                    "Check-in Time",
+                    help="Time of check-in",
+                    width="medium",
+                    disabled=True
+                )
+            }
+        )
+        
+        # Check if there are changes and save them
+        if not df.equals(edited_df):
+            # Detect which rows were changed
+            changed_rows = []
+            
+            for index, row in edited_df.iterrows():
+                original_row = df.iloc[index]
+                # Only check for changes in editable fields
+                if (row["Name"] != original_row["Name"] or
+                    row["Email"] != original_row["Email"] or
+                    row["Phone"] != original_row["Phone"] or
+                    row["College"] != original_row["College"] or
+                    row["Group"] != original_row["Group"]):
+                    
+                    changed_rows.append({
+                        "id": row["ID"],
+                        "name": row["Name"],
+                        "email": row["Email"],
+                        "phone": row["Phone"],
+                        "college": row["College"],
+                        "group": row["Group"]
+                    })
+            
+            if changed_rows and st.button("Save Changes"):
+                success_count = 0
+                for row in changed_rows:
+                    # Find the original participant to get both event_id and checked_in status
+                    original_participant = next((p for p in participants if p['id'] == row['id']), None)
+                    
+                    if original_participant:
+                        # Get event_id and checked_in status from original data
+                        event_id = original_participant['event_id']
+                        checked_in = original_participant['checked_in']
+                        
+                        success = db.update_participant_full(
+                            row['id'],
+                            row['name'],
+                            row['email'],
+                            row['phone'],
+                            row['college'],
+                            row['group'],
+                            event_id,
+                            checked_in,  # Use the original checked_in status
+                            st.session_state.user_id
+                        )
+                        
+                        if success:
+                            success_count += 1
+                
+                if success_count > 0:
+                    st.success(f"Successfully updated {success_count} participants.")
+                    time.sleep(1)
+                    st.rerun()
+    else:
+        st.info("No participants found matching your criteria.")
+        

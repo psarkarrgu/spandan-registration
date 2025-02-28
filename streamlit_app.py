@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # Apply custom CSS
-utils.apply_custom_css()
+#utils.apply_custom_css()
 
 def main():
     """Main function to run the Streamlit app."""
@@ -32,11 +32,10 @@ def main():
     auth.create_initial_admin()
     
     # Sidebar
+    st.sidebar.image(config.APP_ICON,width=200)
     st.sidebar.title(config.APP_NAME)
     
-    # Refresh button in sidebar
-    if st.sidebar.button("🔄 Refresh Page"):
-        st.rerun()
+    
     
     # Dark/Light mode toggle
     if 'dark_mode' not in st.session_state:

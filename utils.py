@@ -1,7 +1,6 @@
 def confirm_dialog(title, message, confirm_button_text="Confirm"):
     """Display a confirmation dialog."""
-    return st.warning(f"{title}: {message}", icon="⚠️")
-"""
+    return st.warning(f"{title}: {message}", icon="⚠️")"""
 Utility functions for the Event Registration System.
 """
 import streamlit as st
@@ -310,46 +309,71 @@ def apply_custom_css():
     st.markdown(camera_js, unsafe_allow_html=True)
 
 def resize_image(image_bytes, max_size_kb=500):
-    """Resize and compress an image to a smaller size for storage."""
+    """Resize and compress an image to a smaller size for storage with better quality preservation."""
     try:
-        from PIL import Image
+        from PIL import Image, ImageEnhance
         import io
+        import numpy as np
         
         # Open the image
         image = Image.open(io.BytesIO(image_bytes))
         
-        # Calculate target dimensions to maintain aspect ratio
-        # but ensure reasonable file size
-        max_dimension = 1500  # Maximum width or height
-        width, height = image.size
-        
-        # Resize if needed
-        if width > max_dimension or height > max_dimension:
-            if width > height:
-                new_width = max_dimension
-                new_height = int(height * (max_dimension / width))
-            else:
-                new_height = max_dimension
-                new_width = int(width * (max_dimension / height))
-            
-            image = image.resize((new_width, new_height), Image.LANCZOS)
-            print(f"DEBUG: Resized image from {width}x{height} to {new_width}x{new_height}")
-        
         # Convert to RGB if needed (to handle PNG with alpha channel)
-        if image.mode != 'RGB':
+        if image.mode == 'RGBA':
+            # Create a white background
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            # Composite the image with the white background
+            image = Image.alpha_composite(background.convert('RGBA'), image)
+            image = image.convert('RGB')
+        elif image.mode != 'RGB':
             image = image.convert('RGB')
         
-        # Compress using JPEG format
-        output = io.BytesIO()
-        quality = 95  # Start with good quality
+        # Original dimensions
+        original_width, original_height = image.size
+        print(f"DEBUG: Original dimensions: {original_width}x{original_height}")
         
+        # Calculate target dimensions while maintaining aspect ratio
+        max_dimension = 1200  # Higher max dimension for better quality
+        
+        if original_width > max_dimension or original_height > max_dimension:
+            if original_width > original_height:
+                new_width = max_dimension
+                new_height = int(original_height * (max_dimension / original_width))
+            else:
+                new_height = max_dimension
+                new_width = int(original_width * (max_dimension / original_height))
+            
+            # Use LANCZOS resampling for better quality
+            image = image.resize((new_width, new_height), Image.LANCZOS)
+            print(f"DEBUG: Resized to {new_width}x{new_height}")
+        
+        # Enhance the image slightly
+        enhancer = ImageEnhance.Sharpness(image)
+        image = enhancer.enhance(1.2)  # Slightly sharpen
+        
+        # Convert to NumPy array for processing
+        img_array = np.array(image)
+        
+        # Apply moderate noise reduction if image is noisy
+        # (This is a simple approach - OpenCV would offer more sophisticated methods)
+        if np.std(img_array) > 50:  # Crude noise detection
+            from scipy import ndimage
+            img_array = ndimage.gaussian_filter(img_array, sigma=0.5)
+            image = Image.fromarray(img_array.astype('uint8'))
+            print("DEBUG: Applied light noise reduction")
+        
+        # Try different quality settings to find optimal compression
+        output = io.BytesIO()
+        
+        # Start with high quality and decrease until size constraint is met
+        quality = 95
         image.save(output, format='JPEG', quality=quality, optimize=True)
         
-        # Check size and reduce quality if needed
-        while output.tell() > max_size_kb * 1024 and quality > 30:
+        # Try different quality settings to meet size constraint
+        while output.tell() > max_size_kb * 1024 and quality > 65:
             output = io.BytesIO()
-            quality -= 10
-            print(f"DEBUG: Reducing quality to {quality}")
+            quality -= 5
+            print(f"DEBUG: Reducing JPEG quality to {quality}")
             image.save(output, format='JPEG', quality=quality, optimize=True)
         
         result = output.getvalue()
@@ -357,11 +381,10 @@ def resize_image(image_bytes, max_size_kb=500):
         return result
     except Exception as e:
         print(f"ERROR in resize_image: {str(e)}")
-        # If optimization fails, return a reduced portion of the original
-        # This is a fallback to prevent hanging
-        if len(image_bytes) > max_size_kb * 1024:
-            return image_bytes[:max_size_kb * 1024]  # Truncate to max size
-        return image_bytes
+        # If optimization fails, return original if under max size or truncated version
+        if len(image_bytes) <= max_size_kb * 1024:
+            return image_bytes
+        return image_bytes[:max_size_kb * 1024]  # Truncate to max size
 
 def export_to_csv(df, filename="export.csv"):
     """Generate a download link for a DataFrame as CSV."""

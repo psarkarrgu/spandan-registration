@@ -151,7 +151,7 @@ def perform_check_in(participant, db):
         st.write(f"**Group:** {participant['group_name'] or 'Not specified'}")
     
     # Add ID card photo capture option
-    capture_id_card = st.checkbox("Capture ID Card Photo", value=False)
+    capture_id_card = st.checkbox("Capture ID Card Photo", value=True)
     
     if capture_id_card:
         st.warning("Make sure the webcam is connected and accessible.")

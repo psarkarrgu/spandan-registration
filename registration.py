@@ -82,6 +82,10 @@ def render_participant_list(participants, db, is_search_result=False):
         checked_in_status = "✅ Checked In" if p['checked_in'] else "❌ Not Checked In"
         check_in_time = utils.format_check_in_time(p['check_in_time']) if p['checked_in'] else "-"
         
+        # Add indicator for ID card photo
+        has_photo = db.get_id_card_photo(p['id']) is not None
+        photo_status = "📷" if has_photo else ""
+        
         participants_data.append({
             "ID": p['id'],
             "Name": p['name'],
@@ -90,7 +94,8 @@ def render_participant_list(participants, db, is_search_result=False):
             "Email": p['email'] or "-",
             "Group": p['group_name'] or "-",
             "Status": checked_in_status,
-            "Check-in Time": check_in_time
+            "Check-in Time": check_in_time,
+            "Photo": photo_status
         })
     
     participants_df = pd.DataFrame(participants_data)
@@ -106,7 +111,7 @@ def render_participant_list(participants, db, is_search_result=False):
     
     with col1:
         # Select participant for actions
-        participant_options = {f"{p['id']}: {p['name']}": p['id'] for p in participants}
+        participant_options = {f"{p['id']}: {p['name']}" + (" 📷" if db.get_id_card_photo(p['id']) is not None else ""): p['id'] for p in participants}
         selected_participant_key = st.selectbox("Select a participant", list(participant_options.keys()))
         selected_participant_id = participant_options[selected_participant_key]
         
@@ -122,6 +127,15 @@ def render_participant_list(participants, db, is_search_result=False):
             action_options[0] = "Undo Check-in"
         
         selected_action = st.selectbox("Select Action", action_options)
+    
+    # Display ID photo if available (before the action)
+    if selected_participant:
+        id_card_photo = db.get_id_card_photo(selected_participant['id'])
+        if id_card_photo:
+            st.subheader("ID Card Photo")
+            st.image(id_card_photo, caption=f"ID Card for {selected_participant['name']}", width=300)
+        elif selected_participant['checked_in']:
+            st.info("This participant has been checked in, but no ID card photo was captured.")
     
     # Perform selected action
     if selected_action == "Check-in" and selected_participant:
@@ -151,7 +165,7 @@ def perform_check_in(participant, db):
         st.write(f"**Group:** {participant['group_name'] or 'Not specified'}")
     
     # Add ID card photo capture option
-    capture_id_card = st.checkbox("Capture ID Card Photo", value=True)
+    capture_id_card = st.checkbox("Capture ID Card Photo", value=False)
     
     if capture_id_card:
         st.warning("Make sure the webcam is connected and accessible.")
@@ -214,7 +228,7 @@ def perform_undo_check_in(participant, db):
         if success:
             st.success(f"✅ Check-in has been undone for {participant['name']}.")
             time.sleep(1)
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Failed to undo check-in.")
 
@@ -317,7 +331,7 @@ def render_on_spot_registration(db, events):
         with col2:
             college = st.text_input("College")
             group_name = st.text_input("Group Name")
-            auto_check_in = False
+            auto_check_in = st.checkbox("Automatically check-in after registration", value=True)
         
         submit = st.form_submit_button("Register Participant")
     
@@ -353,7 +367,7 @@ def render_on_spot_registration(db, events):
             # Clear form (using a session state trick)
             if 'form_submitted' not in st.session_state:
                 st.session_state.form_submitted = True
-                st.rerun()
+                st.experimental_rerun()
             else:
                 del st.session_state.form_submitted
         else:

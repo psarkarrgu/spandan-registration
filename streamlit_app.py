@@ -15,9 +15,9 @@ import config
 # Set page config
 st.set_page_config(
     page_title=config.APP_NAME,
-    page_icon="📋",
+    page_icon=config.APP_ICON,
     layout="wide",
-    initial_sidebar_state="expanded"
+    
 )
 
 # Apply custom CSS

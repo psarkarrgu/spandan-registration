@@ -27,7 +27,7 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(TEMPLATE_DIR, exist_ok=True)
 
 # App settings
-APP_NAME = "Event Registration System"
+APP_NAME = "Spandan Registration System"
 PRIMARY_COLOR = "#1E88E5"
 SECONDARY_COLOR = "#FFC107"
 SUCCESS_COLOR = "#4CAF50"

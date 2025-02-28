@@ -317,7 +317,7 @@ def render_on_spot_registration(db, events):
         with col2:
             college = st.text_input("College")
             group_name = st.text_input("Group Name")
-            auto_check_in = st.checkbox("Automatically check-in after registration", value=True)
+            auto_check_in = False
         
         submit = st.form_submit_button("Register Participant")
     

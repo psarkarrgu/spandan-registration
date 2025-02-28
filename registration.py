@@ -178,10 +178,15 @@ def perform_check_in(participant, db):
             picture = st.camera_input("Take a picture")
             
             if picture:
-                # Convert the file to bytes for storage
-                id_card_photo = picture.getvalue()
-                st.success("✅ ID card photo captured!")
-                st.write(id_card_photo)
+                # Get original size for logging
+                original_size = len(picture.getvalue()) / 1024  # KB
+                
+                # Optimize the image before storing
+                id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=300)
+                
+                # Show success message with size information
+                st.success(f"✅ ID card photo captured and optimized! " +
+                          f"Size reduced from {original_size:.1f}KB to {len(id_card_photo)/1024:.1f}KB")
         except Exception as e:
             st.error(f"Error with camera: {str(e)}")
             st.info("You can proceed without capturing the ID card photo.")

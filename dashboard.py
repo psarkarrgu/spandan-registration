@@ -322,20 +322,7 @@ def show_participant_status_table(db, event_id, event_name):
         html = df.to_html(escape=False, index=False)
         st.markdown(html, unsafe_allow_html=True)
     
-    # Add download buttons for this table
-    st.subheader("Download Participant List")
-    
-    # Create a downloadable version (without HTML links)
-    download_df = df.copy()
-    download_df['Phone'] = [p['phone'] if p['phone'] else "-" for p in participants]
-    download_df['Status'] = [("Checked In" if p['checked_in'] else "Not Checked In") for p in participants]
-    
-    # Export links
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(utils.export_to_csv(download_df, f"participants_{event_name.replace(' ', '_')}.csv"), unsafe_allow_html=True)
-    with col2:
-        st.markdown(utils.export_to_excel(download_df, f"participants_{event_name.replace(' ', '_')}.xlsx"), unsafe_allow_html=True)
+   
 
 def render_export_options(db, event_id, event_name):
     """Render export options for the dashboard."""

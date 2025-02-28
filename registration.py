@@ -181,7 +181,7 @@ def perform_check_in(participant, db):
                 # Convert the file to bytes for storage
                 id_card_photo = picture.getvalue()
                 st.success("✅ ID card photo captured!")
-                st.write(picture)
+                st.write(id_card_photo)
         except Exception as e:
             st.error(f"Error with camera: {str(e)}")
             st.info("You can proceed without capturing the ID card photo.")

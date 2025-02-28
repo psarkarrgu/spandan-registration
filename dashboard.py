@@ -28,6 +28,24 @@ def render_dashboard():
         st.warning("No events found. Please create an event first.")
         return
     
+    # If user is a viewer with an assigned event, restrict view to that event only
+    if st.session_state.role == 'viewer' and st.session_state.assigned_event_id:
+        assigned_event = db.get_event(st.session_state.assigned_event_id)
+        if assigned_event:
+            event_id = assigned_event['id']
+            event_name = assigned_event['name']
+            
+            st.sidebar.info(f"You have access to view: **{event_name}**")
+            
+            # Render the dashboard components with the assigned event
+            render_overview_section(db, event_id, event_name)
+            render_attendance_section(db, event_id, event_name)
+            render_college_breakdown(db, event_id, event_name)
+            render_check_in_timeline(db, event_id, event_name)
+            render_export_options(db, event_id, event_name)
+            return
+    
+    # For users with access to all events
     view_options = ["All Events"] + [f"{e['id']}: {e['name']}" for e in events]
     selected_view = st.sidebar.selectbox("Select View", view_options)
     
@@ -65,8 +83,8 @@ def render_dashboard():
     # Render the dashboard components
     render_overview_section(db, event_id, event_name)
     render_attendance_section(db, event_id, event_name)
-    render_college_breakdown(db, event_id, event_name)
-    render_check_in_timeline(db, event_id, event_name)
+    #render_college_breakdown(db, event_id, event_name)
+    #render_check_in_timeline(db, event_id, event_name)
     
     # Export options
     render_export_options(db, event_id, event_name)
@@ -124,7 +142,6 @@ def render_attendance_section(db, event_id, event_name):
     """Render the attendance breakdown section."""
     st.header("Attendance Breakdown")
     
-    
     if event_id is None:
         # Show event-wise breakdown
         events_stats = db.get_event_stats()
@@ -166,27 +183,7 @@ def render_attendance_section(db, event_id, event_name):
         
         st.plotly_chart(fig, use_container_width=True)
     
-    else:
-        # Show status breakdown for single event
-        stats = db.get_participant_stats(event_id)
-        
-        if not stats or stats['total'] == 0:
-            st.info("No participant data available for this event.")
-            return
-        
-        # Create pie chart
-        fig = px.pie(
-            names=['Checked In', 'Not Checked In'],
-            values=[stats['checked_in'], stats['not_checked_in']],
-            title=f'Attendance Status for {event_name}',
-            color=['Checked In', 'Not Checked In'],
-            color_discrete_map={
-                'Checked In': config.SUCCESS_COLOR,
-                'Not Checked In': config.WARNING_COLOR
-            }
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+    
         
         # Add participant status table
         show_participant_status_table(db, event_id, event_name)

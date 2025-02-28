@@ -19,6 +19,7 @@ def init_auth():
         st.session_state.role = None
         st.session_state.permissions = []
         st.session_state.auth_timestamp = None
+        st.session_state.assigned_event_id = None
     
     # Check for session expiry
     if st.session_state.authenticated and st.session_state.auth_timestamp:
@@ -62,6 +63,7 @@ def login(username, password):
         st.session_state.role = user['role']
         st.session_state.permissions = config.ROLES[user['role']]['permissions']
         st.session_state.auth_timestamp = datetime.datetime.now()
+        st.session_state.assigned_event_id = user['assigned_event_id']
         
         # Update last login timestamp
         db.update_user_last_login(user['id'])
@@ -77,6 +79,7 @@ def logout():
     st.session_state.role = None
     st.session_state.permissions = []
     st.session_state.auth_timestamp = None
+    st.session_state.assigned_event_id = None
 
 def create_initial_admin():
     """Create the initial admin user if no users exist."""

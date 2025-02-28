@@ -69,13 +69,13 @@ def render_upload_section():
                     st.markdown(f"- {warning}")
             
             # Preview the data
-            st.subheader("Data Preview")
-            st.dataframe(df)
+            st.subheader("Data Preview(Verify & Edit the data before confirming)")
+            #st.dataframe(df)
             
             # Allow for edits
-            if st.checkbox("Edit data before submission"):
-                edited_df = st.experimental_data_editor(df)
-                df = edited_df
+            #if st.checkbox("Edit data before submission"):
+            edited_df = st.data_editor(df)
+            df = edited_df
             
             # Confirm upload
             if st.button("Confirm Upload"):

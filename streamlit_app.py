@@ -17,7 +17,7 @@ st.set_page_config(
     page_title=config.APP_NAME,
     page_icon="📋",
     layout="wide",
-    #initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded"
 )
 
 # Apply custom CSS
@@ -32,19 +32,23 @@ def main():
     auth.create_initial_admin()
     
     # Sidebar
-    st.title(config.APP_NAME)
+    st.sidebar.title(config.APP_NAME)
+    
+    # Refresh button in sidebar
+    if st.sidebar.button("🔄 Refresh Page"):
+        st.rerun()
     
     # Dark/Light mode toggle
     if 'dark_mode' not in st.session_state:
         st.session_state.dark_mode = False
     
-    #dark_mode = st.sidebar.checkbox("Dark Mode", value=st.session_state.dark_mode)
+    dark_mode = st.sidebar.checkbox("Dark Mode", value=st.session_state.dark_mode)
     
-    # if dark_mode != st.session_state.dark_mode:
-    #     st.session_state.dark_mode = dark_mode
-        
+    if dark_mode != st.session_state.dark_mode:
+        st.session_state.dark_mode = dark_mode
+        st.experimental_rerun()
     
-    #utils.set_theme(dark_mode)
+    utils.set_theme(dark_mode)
     
     # Display user info and logout button
     auth.display_user_info()
@@ -77,7 +81,14 @@ def main():
         nav_selection = st.sidebar.radio("Navigation", nav_options)
         
         if nav_selection == "Dashboard":
-            dashboard.render_dashboard()
+            try:
+                dashboard.render_dashboard()
+            except AttributeError:
+                # Fallback in case module or function can't be found
+                st.error("Dashboard module not found. Please check your installation.")
+                st.info("Try renaming dashboard-py-final.py to dashboard.py if you have both files.")
+                st.write("You can also copy the dashboard code from the correct file to dashboard.py.")
+                st.write("Technical error: module 'dashboard' has no attribute 'render_dashboard'")
         
         elif nav_selection == "Registration":
             registration.render_registration()
@@ -101,10 +112,18 @@ def render_user_management():
     if users:
         user_data = []
         for user in users:
+            # Get event name if assigned
+            event_name = "All Events"
+            if user['assigned_event_id']:
+                event = db.get_event(user['assigned_event_id'])
+                if event:
+                    event_name = event['name']
+            
             user_data.append({
                 'ID': user['id'],
                 'Username': user['username'],
                 'Role': config.ROLES[user['role']]['name'],
+                'Assigned Event': event_name if user['role'] == 'viewer' else "N/A",
                 'Last Login': user['last_login'] or "Never"
             })
         
@@ -115,16 +134,52 @@ def render_user_management():
     # Create new user
     st.header("Create New User")
     
+    # Initialize session state values for the form
+    if 'new_user_role' not in st.session_state:
+        st.session_state.new_user_role = 'viewer'  # Default role
+    
+    # Role selection outside the form for dynamic UI
+    role_options = {role_info['name']: role for role, role_info in config.ROLES.items()}
+    selected_role_name = st.selectbox(
+        "Role", 
+        list(role_options.keys()),
+        key="role_selector"
+    )
+    selected_role = role_options[selected_role_name]
+    
+    # Check if role changed and update session state
+    if st.session_state.new_user_role != selected_role:
+        st.session_state.new_user_role = selected_role
+    
+    # Show event assignment option outside the form
+    assigned_event_id = None
+    if selected_role == 'viewer':
+        st.write("**Assign to Specific Event:**")
+        events = db.get_all_events()
+        
+        if events:
+            event_options = {f"{e['id']}: {e['name']}": e['id'] for e in events}
+            event_options["All Events"] = None
+            selected_event_key = st.selectbox("Select Event Access", list(event_options.keys()))
+            assigned_event_id = event_options[selected_event_key]
+            
+            if assigned_event_id:
+                st.info(f"This viewer will only have access to the selected event.")
+            else:
+                st.info(f"This viewer will have access to all events.")
+        else:
+            st.warning("No events found. The viewer will have access to all future events.")
+    
+    st.info(f"This role has the following permissions: {', '.join(config.ROLES[selected_role]['permissions'])}")
+    
+    # User creation form with username and password
     with st.form("new_user_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         confirm_password = st.text_input("Confirm Password", type="password")
         
-        role_options = {role_info['name']: role for role, role_info in config.ROLES.items()}
-        selected_role_name = st.selectbox("Role", list(role_options.keys()))
-        selected_role = role_options[selected_role_name]
-        
-        st.info(f"This role has the following permissions: {', '.join(config.ROLES[selected_role]['permissions'])}")
+        # Add hidden field to store the role and event
+        st.text_input("Selected Role", selected_role, disabled=True, label_visibility="hidden", key="hidden_role")
         
         submit = st.form_submit_button("Create User")
     
@@ -138,12 +193,12 @@ def render_user_management():
             password_hash = auth.hash_password(password)
             
             # Try to create user
-            user_id = db.create_user(username, password_hash, selected_role)
+            user_id = db.create_user(username, password_hash, selected_role, assigned_event_id)
             
             if user_id:
                 st.success(f"User '{username}' created successfully with role '{selected_role_name}'!")
                 time.sleep(1)
-                 
+                st.experimental_rerun()
             else:
                 st.error(f"Failed to create user. Username '{username}' may already exist.")
     
@@ -176,12 +231,12 @@ def render_user_management():
                     del st.session_state.confirm_delete_user
                 
                 time.sleep(1)
-                 
+                st.experimental_rerun()
             
             if st.session_state.get('confirm_delete_user_cancel', False):
                 if 'confirm_delete_user' in st.session_state:
                     del st.session_state.confirm_delete_user
-                 
+                st.experimental_rerun()
     else:
         st.info("There are no other users besides yourself that can be deleted.")
 

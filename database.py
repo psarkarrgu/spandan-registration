@@ -9,7 +9,6 @@ import json
 import shutil
 from pathlib import Path
 import config
-import streamlit as st
 
 class Database:
     def __init__(self, db_path=config.DATABASE_PATH):
@@ -42,8 +41,10 @@ class Database:
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL,
+            assigned_event_id INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP
+            last_login TIMESTAMP,
+            FOREIGN KEY (assigned_event_id) REFERENCES events (id)
         )
         ''')
         
@@ -74,6 +75,7 @@ class Database:
             registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             checked_in INTEGER DEFAULT 0,
             check_in_time TIMESTAMP,
+            id_card_photo BLOB,
             FOREIGN KEY (event_id) REFERENCES events (id)
         )
         ''')
@@ -138,14 +140,14 @@ class Database:
         return True
     
     # User operations
-    def create_user(self, username, password_hash, role):
+    def create_user(self, username, password_hash, role, assigned_event_id=None):
         """Create a new user."""
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (username, password_hash, role)
+                "INSERT INTO users (username, password_hash, role, assigned_event_id) VALUES (?, ?, ?, ?)",
+                (username, password_hash, role, assigned_event_id)
             )
             conn.commit()
             return cursor.lastrowid
@@ -174,7 +176,7 @@ class Database:
         """Get all users."""
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, created_at, last_login FROM users")
+        cursor.execute("SELECT id, username, role, assigned_event_id, created_at, last_login FROM users")
         return cursor.fetchall()
     
     def delete_user(self, user_id):
@@ -270,7 +272,6 @@ class Database:
             conn.commit()
             return True
         except Exception as e:
-            st.error("Error")
             conn.rollback()
             raise e
     
@@ -353,7 +354,7 @@ class Database:
         conn.commit()
         return True
     
-    def check_in_participant(self, participant_id, user_id):
+    def check_in_participant(self, participant_id, user_id, id_card_photo=None):
         """Mark a participant as checked in."""
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -367,12 +368,21 @@ class Database:
         
         # Only update if not already checked in
         if not current_status['checked_in']:
-            cursor.execute(
-                """UPDATE participants 
-                   SET checked_in = 1, check_in_time = CURRENT_TIMESTAMP 
-                   WHERE id = ?""",
-                (participant_id,)
-            )
+            # Prepare query based on whether ID card photo was provided
+            if id_card_photo:
+                cursor.execute(
+                    """UPDATE participants 
+                       SET checked_in = 1, check_in_time = CURRENT_TIMESTAMP, id_card_photo = ?
+                       WHERE id = ?""",
+                    (id_card_photo, participant_id)
+                )
+            else:
+                cursor.execute(
+                    """UPDATE participants 
+                       SET checked_in = 1, check_in_time = CURRENT_TIMESTAMP 
+                       WHERE id = ?""",
+                    (participant_id,)
+                )
             
             # Track the change
             cursor.execute(
@@ -381,6 +391,14 @@ class Database:
                    VALUES (?, ?, ?, ?, ?)""",
                 (participant_id, 'checked_in', '0', '1', user_id)
             )
+            
+            if id_card_photo:
+                cursor.execute(
+                    """INSERT INTO data_history 
+                       (participant_id, field_name, old_value, new_value, modified_by) 
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (participant_id, 'id_card_photo', None, 'Photo captured', user_id)
+                )
             
             conn.commit()
             return True
@@ -393,7 +411,7 @@ class Database:
         cursor = conn.cursor()
         
         cursor.execute(
-            "UPDATE participants SET checked_in = 0, check_in_time = NULL WHERE id = ?",
+            "UPDATE participants SET checked_in = 0, check_in_time = NULL, id_card_photo = NULL WHERE id = ?",
             (participant_id,)
         )
         
@@ -403,6 +421,14 @@ class Database:
                (participant_id, field_name, old_value, new_value, modified_by) 
                VALUES (?, ?, ?, ?, ?)""",
             (participant_id, 'checked_in', '1', '0', user_id)
+        )
+        
+        # Track photo removal if applicable
+        cursor.execute(
+            """INSERT INTO data_history 
+               (participant_id, field_name, old_value, new_value, modified_by) 
+               VALUES (?, ?, ?, ?, ?)""",
+            (participant_id, 'id_card_photo', 'Photo captured', 'Photo removed', user_id)
         )
         
         conn.commit()

@@ -150,15 +150,57 @@ def perform_check_in(participant, db):
         st.write(f"**Email:** {participant['email'] or 'Not specified'}")
         st.write(f"**Group:** {participant['group_name'] or 'Not specified'}")
     
-    if st.button("Confirm Check-in"):
-        success = db.check_in_participant(participant['id'], st.session_state.user_id)
+    # Add ID card photo capture option
+    capture_id_card = st.checkbox("Capture ID Card Photo", value=False)
+    
+    if capture_id_card:
+        st.warning("Make sure the webcam is connected and accessible.")
+        st.write("Click below to take a photo of the ID card:")
         
-        if success:
-            st.success(f"✅ {participant['name']} has been checked in successfully!")
-            time.sleep(1)
+        id_card_photo = None
+        
+        # Use streamlit camera_input
+        try:
+            picture = st.camera_input("Take a picture")
             
+            if picture:
+                # Get original size for logging
+                original_size = len(picture.getvalue()) / 1024  # KB
+                
+                # Optimize the image before storing
+                id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=300)
+                
+                # Show success message with size information
+                st.success(f"✅ ID card photo captured and optimized! " +
+                          f"Size reduced from {original_size:.1f}KB to {len(id_card_photo)/1024:.1f}KB")
+        except Exception as e:
+            st.error(f"Error with camera: {str(e)}")
+            st.info("You can proceed without capturing the ID card photo.")
+    
+    # Confirm check-in button
+    if st.button("Confirm Check-in"):
+        if capture_id_card and not 'id_card_photo' in locals():
+            st.warning("Please capture the ID card photo first or uncheck the 'Capture ID Card Photo' option.")
         else:
-            st.error("Failed to check in participant. They may already be checked in.")
+            # Get the photo bytes if available, otherwise None
+            photo_data = id_card_photo if capture_id_card and 'id_card_photo' in locals() else None
+            
+            # Wrap database operation in try-except
+            try:
+                success = db.check_in_participant(participant['id'], st.session_state.user_id, photo_data)
+                
+                if success:
+                    msg = f"✅ {participant['name']} has been checked in successfully!"
+                    if photo_data:
+                        msg += " ID card photo saved."
+                    st.success(msg)
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("Failed to check in participant. They may already be checked in.")
+            except Exception as e:
+                st.error(f"Error during check-in: {str(e)}")
+                st.info("Try again without capturing the photo, or with a smaller photo.")
 
 def perform_undo_check_in(participant, db):
     """Undo a check-in for a participant."""
@@ -172,7 +214,7 @@ def perform_undo_check_in(participant, db):
         if success:
             st.success(f"✅ Check-in has been undone for {participant['name']}.")
             time.sleep(1)
-            
+            st.experimental_rerun()
         else:
             st.error("Failed to undo check-in.")
 
@@ -207,13 +249,19 @@ def perform_edit_participant(participant, db):
         if success:
             st.success(f"✅ Details updated successfully for {name}!")
             time.sleep(1)
-            
+            st.rerun()
         else:
             st.error("Failed to update participant details.")
 
 def view_participant_history(participant, db):
     """View the modification history for a participant."""
     st.subheader(f"History for: {participant['name']}")
+    
+    # Display ID card photo if available
+    id_card_photo = db.get_id_card_photo(participant['id'])
+    if id_card_photo:
+        st.subheader("ID Card Photo")
+        st.image(id_card_photo, caption="ID Card", width=300)
     
     history = db.get_data_modification_history(participant['id'])
     
@@ -305,7 +353,7 @@ def render_on_spot_registration(db, events):
             # Clear form (using a session state trick)
             if 'form_submitted' not in st.session_state:
                 st.session_state.form_submitted = True
-                
+                st.experimental_rerun()
             else:
                 del st.session_state.form_submitted
         else:

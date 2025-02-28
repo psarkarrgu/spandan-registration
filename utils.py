@@ -1,3 +1,6 @@
+def confirm_dialog(title, message, confirm_button_text="Confirm"):
+    """Display a confirmation dialog."""
+    return st.warning(f"{title}: {message}", icon="⚠️")
 """
 Utility functions for the Event Registration System.
 """
@@ -27,7 +30,7 @@ def create_registration_template():
     ws.title = "Registration"
     
     # Define headers
-    headers = ["Name", "Email", "Phone", "College", "Group Name", "Event ID"]
+    headers = ["Name*", "Email", "Phone", "College", "Group Name", "Event ID*"]
     
     # Add headers to the worksheet
     for col_num, header in enumerate(headers, 1):
@@ -48,7 +51,7 @@ def create_registration_template():
             ws.cell(row=row_num, column=col_num).value = value
     
     # Add a note about required fields
-    ws.cell(row=len(example_data) + 3, column=1).value = "Required fields : Name , Event ID"
+    ws.cell(row=len(example_data) + 3, column=1).value = "* Required fields"
     ws.cell(row=len(example_data) + 4, column=1).value = "Note: Event ID refers to the ID of the event in the system."
     
     # Set column widths
@@ -89,8 +92,7 @@ def validate_uploaded_data(df, events):
     required_columns = ['Name', 'Event ID']
     for col in required_columns:
         if col not in df.columns:
-            pass
-            #errors.append(f"Missing required column: {col}")
+            errors.append(f"Missing required column: {col}")
     
     # If there are column errors, return early
     if errors:
@@ -125,14 +127,39 @@ def validate_uploaded_data(df, events):
 
 def prepare_data_for_db(df):
     """Prepare uploaded data for database insertion."""
-    # Convert column names to lowercase
-    df.columns = [col.lower().replace(' ', '_') for col in df.columns]
+    # Make a copy to avoid modifying the original DataFrame
+    df_copy = df.copy()
+    
+    # Standardize column names: convert to lowercase and replace spaces with underscores
+    df_copy.columns = [col.lower().replace(' ', '_') for col in df_copy.columns]
+    
+    # Check if 'event_id' exists, if not, try to find 'event id' or similar
+    if 'event_id' not in df_copy.columns:
+        # Try to find the event ID column from the original DataFrame
+        if 'Event ID' in df.columns:
+            df_copy['event_id'] = df['Event ID']
+        elif 'event id' in df_copy.columns:
+            df_copy['event_id'] = df_copy['event id']
+            df_copy = df_copy.drop(columns=['event id'])
+        else:
+            # Check for any column containing 'event' and 'id'
+            possible_columns = [col for col in df_copy.columns if 'event' in col.lower() and 'id' in col.lower()]
+            if possible_columns:
+                df_copy['event_id'] = df_copy[possible_columns[0]]
+                df_copy = df_copy.drop(columns=[possible_columns[0]])
     
     # Ensure event_id is an integer
-    df['event_id'] = df['event_id'].astype(int)
+    df_copy['event_id'] = df_copy['event_id'].astype(int)
+    
+    # Make sure all required columns exist
+    required_columns = ['name', 'email', 'phone', 'college', 'group_name', 'event_id']
+    for col in required_columns:
+        if col not in df_copy.columns:
+            # Create empty column if missing
+            df_copy[col] = None
     
     # Convert to list of dictionaries
-    return df.to_dict('records')
+    return df_copy.to_dict('records')
 
 def create_chart(chart_type, data, title, x_label, y_label):
     """Create a chart using Plotly."""
@@ -254,13 +281,87 @@ def apply_custom_css():
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
+    
+    # Add some JavaScript for camera functionality
+    camera_js = """
+    <script>
+    function captureIdCard() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Your browser does not support camera access!');
+            return;
+        }
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                // Camera access successful
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                
+                // You would normally implement capture logic here
+                // This is just a placeholder
+            })
+            .catch(function(error) {
+                alert('Error accessing camera: ' + error.message);
+            });
+    }
+    </script>
+    """
+    st.markdown(camera_js, unsafe_allow_html=True)
 
-def set_theme(is_dark_mode):
-    """Set the theme (light/dark) for the app."""
-    if is_dark_mode:
-        st.markdown('<body class="dark-mode">', unsafe_allow_html=True)
-    else:
-        st.markdown('<body>', unsafe_allow_html=True)
+def resize_image(image_bytes, max_size_kb=500):
+    """Resize and compress an image to a smaller size for storage."""
+    try:
+        from PIL import Image
+        import io
+        
+        # Open the image
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        # Calculate target dimensions to maintain aspect ratio
+        # but ensure reasonable file size
+        max_dimension = 800  # Maximum width or height
+        width, height = image.size
+        
+        # Resize if needed
+        if width > max_dimension or height > max_dimension:
+            if width > height:
+                new_width = max_dimension
+                new_height = int(height * (max_dimension / width))
+            else:
+                new_height = max_dimension
+                new_width = int(width * (max_dimension / height))
+            
+            image = image.resize((new_width, new_height), Image.LANCZOS)
+            print(f"DEBUG: Resized image from {width}x{height} to {new_width}x{new_height}")
+        
+        # Convert to RGB if needed (to handle PNG with alpha channel)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Compress using JPEG format
+        output = io.BytesIO()
+        quality = 85  # Start with good quality
+        
+        image.save(output, format='JPEG', quality=quality, optimize=True)
+        
+        # Check size and reduce quality if needed
+        while output.tell() > max_size_kb * 1024 and quality > 30:
+            output = io.BytesIO()
+            quality -= 10
+            print(f"DEBUG: Reducing quality to {quality}")
+            image.save(output, format='JPEG', quality=quality, optimize=True)
+        
+        result = output.getvalue()
+        print(f"DEBUG: Original size: {len(image_bytes)/1024:.1f}KB, New size: {len(result)/1024:.1f}KB")
+        return result
+    except Exception as e:
+        print(f"ERROR in resize_image: {str(e)}")
+        # If optimization fails, return a reduced portion of the original
+        # This is a fallback to prevent hanging
+        if len(image_bytes) > max_size_kb * 1024:
+            return image_bytes[:max_size_kb * 1024]  # Truncate to max size
+        return image_bytes
 
 def export_to_csv(df, filename="export.csv"):
     """Generate a download link for a DataFrame as CSV."""
@@ -268,6 +369,13 @@ def export_to_csv(df, filename="export.csv"):
     b64 = base64.b64encode(csv.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="{filename}">Download CSV</a>'
     return href
+
+def set_theme(is_dark_mode):
+    """Set the theme (light/dark) for the app."""
+    if is_dark_mode:
+        st.markdown('<body class="dark-mode">', unsafe_allow_html=True)
+    else:
+        st.markdown('<body>', unsafe_allow_html=True)
 
 def export_to_excel(df, filename="export.xlsx"):
     """Generate a download link for a DataFrame as Excel."""
@@ -300,7 +408,3 @@ def show_loading_spinner(text="Loading..."):
 def get_color_scale():
     """Get a nice color scale for charts."""
     return px.colors.sequential.Blues
-
-def confirm_dialog(title, message, confirm_button_text="Confirm"):
-    """Display a confirmation dialog."""
-    return st.warning(f"{title}: {message}", icon="⚠️")

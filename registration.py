@@ -182,7 +182,7 @@ def perform_check_in(participant, db):
                 original_size = len(picture.getvalue()) / 1024  # KB
                 
                 # Optimize the image before storing
-                id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=300)
+                id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=800)
                 
                 # Show success message with size information
                 st.success(f"✅ ID card photo captured and optimized! " +

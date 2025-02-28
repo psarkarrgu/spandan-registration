@@ -320,7 +320,7 @@ def resize_image(image_bytes, max_size_kb=500):
         
         # Calculate target dimensions to maintain aspect ratio
         # but ensure reasonable file size
-        max_dimension = 800  # Maximum width or height
+        max_dimension = 1500  # Maximum width or height
         width, height = image.size
         
         # Resize if needed

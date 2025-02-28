@@ -579,6 +579,19 @@ class Database:
         
         return cursor.fetchall()
     
+    def get_id_card_photo(self, participant_id):
+        """Get ID card photo for a participant."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id_card_photo FROM participants WHERE id = ?", (participant_id,))
+        result = cursor.fetchone()
+        
+        if result and result['id_card_photo']:
+            return result['id_card_photo']
+        
+        return None
+    
     def export_participants_data(self, event_id=None):
         """Export participants data as a pandas DataFrame."""
         conn = self.get_connection()

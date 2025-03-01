@@ -97,14 +97,12 @@ class Database:
         
         conn.commit()
     
-    def create_backup(self):
+    def create_backup(self,filename):
         """Create a backup of the database."""
         if not os.path.exists(self.db_path):
             return False
             
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_filename = f"backup_{timestamp}.db"
-        backup_path = os.path.join(config.BACKUP_DIR, backup_filename)
+        backup_path = os.path.join(config.BACKUP_DIR, filename)
         
         self.close_connection()  # Close connection before backup
         shutil.copy2(self.db_path, backup_path)

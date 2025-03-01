@@ -101,7 +101,7 @@ class Database:
         """Create a backup of the database."""
         if not os.path.exists(self.db_path):
             return False
-            
+        filename=filename+'.db'
         backup_path = os.path.join(config.BACKUP_DIR, filename)
         
         self.close_connection()  # Close connection before backup

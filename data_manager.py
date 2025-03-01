@@ -16,7 +16,7 @@ def render_data_manager():
     """Render the data manager page."""
     st.title("Spandan Data Management")
     
-    tabs = st.tabs(["Upload Registrations", "Manage Events", "Participant Manager", "Backup & Restore"])
+    tabs = st.tabs(["Upload Registrations", "Event Manager", "Participant Manager", "Backup & Restore"])
     
     with tabs[0]:
         render_upload_section()
@@ -103,7 +103,7 @@ def render_upload_section():
 
 def render_event_management():
     """Render the event management section."""
-    st.header("Manage Events")
+    st.header("Event Manager")
     
     db = Database()
     
@@ -256,15 +256,18 @@ def render_backup_section():
         st.subheader("Create Backup")
         
         # Add custom filename option
-        default_filename = f"backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        custom_filename = st.text_input("Backup Filename (optional)", value=default_filename)
+        #default_filename = f"backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        custom_filename = st.text_input("Backup Filename")
         
         if st.button("Create New Backup"):
-            backup_path = db.create_backup(custom_filename)
-            if backup_path:
-                st.success(f"Backup created successfully at: {os.path.basename(backup_path)}")
+            if custom_filename:
+                backup_path = db.create_backup(custom_filename)
+                if backup_path:
+                    st.success(f"Backup created successfully at: {os.path.basename(backup_path)}")
+                else:
+                    st.error("Failed to create backup.")
             else:
-                st.error("Failed to create backup.")
+                st.warning("Provide a backup filename.")
     
     with col2:
         # Export data section
@@ -301,7 +304,6 @@ def render_backup_section():
     # Backup history and restore
     st.subheader("Backup History")
     backups = db.list_backups()
-    
     if backups:
         backup_df = pd.DataFrame([
             {
@@ -313,22 +315,41 @@ def render_backup_section():
         
         st.dataframe(backup_df)
         
-        # Restore from backup
-        st.subheader("Restore from Backup")
+        # Single backup management section
+        st.subheader("Backup Management")
         
+        # Single selector for both operations
         backup_options = {b['filename']: b['path'] for b in backups}
-        selected_backup = st.selectbox("Select backup to restore", list(backup_options.keys()))
+        selected_backup = st.selectbox("Select a backup", list(backup_options.keys()))
+        selected_path = backup_options[selected_backup]
         
-        if st.button("Restore Database"):
-            # Confirm restore
-            if 'confirm_restore' not in st.session_state:
-                st.session_state.confirm_restore = selected_backup
-                st.warning("⚠️ WARNING: Restoring from a backup will overwrite your current database. This action cannot be undone.")
-                st.warning("Are you sure you want to continue?")
-                st.button("Yes, Restore", key="confirm_restore_yes")
-                st.button("Cancel", key="confirm_restore_cancel")
+        # Two buttons side by side
+        col1, col2 = st.columns(2)
         
-        # Handle confirmation
+        with col1:
+            if st.button("🔄 Restore"):
+                # Confirm restore
+                if 'confirm_restore' not in st.session_state:
+                    st.session_state.confirm_restore = selected_backup
+                    st.warning("⚠️ WARNING: Restoring from a backup will overwrite your current database. This action cannot be undone.")
+                    st.warning("Are you sure you want to continue?")
+                    st.button("Yes, Restore", key="confirm_restore_yes")
+                    st.button("Cancel", key="confirm_restore_cancel")
+        
+        with col2:
+            if st.button("🗑️ Delete"):
+                if selected_backup == 'initial_blank_database.db':
+                    st.warning("This Blank Backup can not be deleted. Required for restoring the system")
+                else:
+                    # Confirm delete
+                    if 'confirm_delete' not in st.session_state:
+                        st.session_state.confirm_delete = selected_backup
+                        st.warning("⚠️ WARNING: Deleting a backup cannot be undone.")
+                        st.warning("Are you sure you want to delete this backup?")
+                        st.button("Yes, Delete", key="confirm_delete_yes")
+                        st.button("Cancel", key="confirm_delete_cancel")
+         
+        # Handle restore confirmation
         if 'confirm_restore' in st.session_state:
             if st.session_state.get('confirm_restore_yes', False):
                 backup_path = backup_options[st.session_state.confirm_restore]
@@ -348,6 +369,29 @@ def render_backup_section():
             if st.session_state.get('confirm_restore_cancel', False):
                 if 'confirm_restore' in st.session_state:
                     del st.session_state.confirm_restore
+                st.rerun()
+        
+        # Handle delete confirmation
+        if 'confirm_delete' in st.session_state:
+            if st.session_state.get('confirm_delete_yes', False):
+                backup_path = backup_options[st.session_state.confirm_delete]
+                
+                try:
+                    # Delete the backup file
+                    os.remove(backup_path)
+                    st.success(f"Backup '{st.session_state.confirm_delete}' deleted successfully!")
+                except Exception as e:
+                    st.error(f"Failed to delete backup: {str(e)}")
+                
+                if 'confirm_delete' in st.session_state:
+                    del st.session_state.confirm_delete
+                
+                time.sleep(1)
+                st.rerun()
+            
+            if st.session_state.get('confirm_delete_cancel', False):
+                if 'confirm_delete' in st.session_state:
+                    del st.session_state.confirm_delete
                 st.rerun()
     else:
         st.info("No backups found.")

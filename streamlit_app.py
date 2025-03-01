@@ -32,7 +32,7 @@ def main():
     auth.create_initial_admin()
     
     # Sidebar
-    st.sidebar.image(config.APP_ICON,width=200)
+    st.sidebar.image(config.EVENT_ICON,width=270)
     st.sidebar.title(config.APP_NAME)
     st.sidebar.markdown("#### Developer👨🏻‍💻[Pranay Sarkar](https://www.linkedin.com/in/pranay-sarkar/)")
     

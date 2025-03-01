@@ -4,7 +4,8 @@ Configuration settings for the Event Registration System.
 import os
 from pathlib import Path
 APP_TITLE = "Spandan 1.0"
-APP_ICON = 'ndim.png'
+APP_ICON = 'src/ndim.png'
+EVENT_ICON = 'src/SPANDAN.webp'
 THEME_COLOR = 'red'
 ENABLE_DARK_MODE = False
 # Base directory

@@ -165,19 +165,18 @@ def perform_check_in(participant, db):
     
     # Confirm check-in button
     if st.button("Confirm Check-in"):
-        if capture_id_card and not 'id_card_photo' in locals():
-            st.warning("Please capture the ID card photo first or uncheck the 'Capture ID Card Photo' option.")
-        else:
-            # Get the photo bytes if available, otherwise None
-            photo_data = id_card_photo if capture_id_card and 'id_card_photo' in locals() else None
+        
+        # Get the photo bytes if available, otherwise None
+        photo_data = id_card_photo if capture_id_card and 'id_card_photo' in locals() else None
+        
+        # Wrap database operation in try-except
+        try:
+            success = db.check_in_participant(participant['id'], st.session_state.user_id, photo_data)
             
-            # Wrap database operation in try-except
-            try:
-                success = db.check_in_participant(participant['id'], st.session_state.user_id, photo_data)
-                
-                
-            except Exception as e:
-                st.error(f"Error during check-in: {str(e)} Try again")
+            
+        except Exception as e:
+            st.error(f"Error during check-in: {str(e)} Try again")
+        st.rerun()
                 
 
 def perform_undo_check_in(participant, db):

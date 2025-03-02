@@ -30,7 +30,7 @@ def create_registration_template():
     ws.title = "Registration"
     
     # Define headers
-    headers = ["Name*", "Email", "Phone", "College", "Group Name", "Event ID*"]
+    headers = ["Name", "Email", "Phone", "College", "Group Name", "Event ID"]
     
     # Add headers to the worksheet
     for col_num, header in enumerate(headers, 1):

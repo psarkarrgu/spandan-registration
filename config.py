@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 APP_TITLE = "Spandan 1.0"
 APP_ICON = 'src/ndim.png'
-EVENT_ICON = 'src/SPANDAN.webp'
+EVENT_ICON = 'src/SpandanBlack.png'
 THEME_COLOR = 'red'
 ENABLE_DARK_MODE = False
 # Base directory

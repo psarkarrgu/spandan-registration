@@ -129,13 +129,7 @@ def render_participant_list(participants, db, is_search_result=False):
         selected_action = st.selectbox("Select Action", action_options)
     
     # Display ID photo if available (before the action)
-    if selected_participant:
-        id_card_photo = db.get_id_card_photo(selected_participant['id'])
-        if id_card_photo:
-            st.subheader("ID Card Photo")
-            st.image(id_card_photo, caption=f"ID Card for {selected_participant['name']}", width=300)
-        elif selected_participant['checked_in']:
-            st.info("This participant has been checked in, but no ID card photo was captured.")
+    
     
     # Perform selected action
     if selected_action == "Check-in" and selected_participant:
@@ -166,30 +160,8 @@ def perform_check_in(participant, db):
     
     # Add ID card photo capture option
     capture_id_card = False
-    picture="None"
-    if capture_id_card:
-        st.warning("Make sure the webcam is connected and accessible.")
-        st.write("Click below to take a photo of the ID card:")
-        
-        id_card_photo = None
-        
-        # Use streamlit camera_input
-        try:
-            picture = st.camera_input("Take a picture")
-            
-            if picture:
-                # Get original size for logging
-                original_size = len(picture.getvalue()) / 1024  # KB
-                
-                # Optimize the image before storing
-                id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=300)
-                
-                # Show success message with size information
-                st.success(f"✅ ID card photo captured and optimized! " +
-                          f"Size reduced from {original_size:.1f}KB to {len(id_card_photo)/1024:.1f}KB")
-        except Exception as e:
-            st.error(f"Error with camera: {str(e)}")
-            st.info("You can proceed without capturing the ID card photo.")
+   
+    
     
     # Confirm check-in button
     if st.button("Confirm Check-in"):
@@ -203,19 +175,10 @@ def perform_check_in(participant, db):
             try:
                 success = db.check_in_participant(participant['id'], st.session_state.user_id, photo_data)
                 
-                if picture:
-                    # Get original size for logging
-                    original_size = len(picture.getvalue()) / 1024  # KB
-                    
-                    # Optimize the image before storing
-                    id_card_photo = utils.resize_image(picture.getvalue(), max_size_kb=300)
-                    
-                    # Show success message with size information
-                    st.success(f"✅ ID card photo captured and optimized! " +
-                            f"Size reduced from {original_size:.1f}KB to {len(id_card_photo)/1024:.1f}KB")
+                
             except Exception as e:
-                st.error(f"Error during check-in: {str(e)}")
-                st.info("Try again without capturing the photo, or with a smaller photo.")
+                st.error(f"Error during check-in: {str(e)} Try again")
+                
 
 def perform_undo_check_in(participant, db):
     """Undo a check-in for a participant."""

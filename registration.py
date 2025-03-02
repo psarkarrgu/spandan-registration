@@ -166,7 +166,7 @@ def perform_check_in(participant, db):
     
     # Add ID card photo capture option
     capture_id_card = False
-    
+    picture="None"
     if capture_id_card:
         st.warning("Make sure the webcam is connected and accessible.")
         st.write("Click below to take a photo of the ID card:")
